@@ -112,13 +112,13 @@
 
             WILL.init(600, 400, chat.server);
 
+            //Module.addPostScript(function () {
+            //    Module.InkDecoder.getStrokeBrush = function (paint, writer) {
+            //        return WILL.brush;
+            //    }
 
-            //chat.client.receive = function (sender, data) {
-            //    console.log("chat client receive " + data);
-            //    client.receive(sender, data);
-            //}
-
-            Module.addPostScript();
+            //    WILL.init(600, 400, chat.server);
+            //});
 
         }
 
@@ -146,7 +146,7 @@
         
         <div class="row">
             <div class="col-lg-7">
-                <canvas id="canvas" oncontextmenu="event.preventDefault();"></canvas>
+                <canvas id="canvas" oncontextmenu="WILL.clear(); event.preventDefault();"></canvas>
             </div>
             <div class="col-lg-4">
                 <div class="row">

@@ -14,7 +14,7 @@
         this.canvas = new Module.InkCanvas(this.canvasElement, width, height);
         this.strokesLayer = this.canvas.createLayer();
 
-        this.brush = new Module.DirectBrush();
+        this.brush = new Module.SolidColorBrush();
 
         this.pathBuilder = new Module.SpeedPathBuilder();
         this.pathBuilder.setNormalizationConfig(182, 3547);
@@ -26,7 +26,7 @@
 
         client.init(server);
 
-        this.writer = new Writer(client.id);
+        this.writer = new Writer(client.id , client.uid);
         client.writers[client.id] = this.writer;
 
         this.clearCanvas();
@@ -43,11 +43,11 @@
         //this.Mode = mode;
         // 1 For drawing , 2 For erasing
         if (mode == 1) {
-            this.writer.strokeRenderer.configure({ brush: WILL.brush, color: ((client.id == 1) ? Module.Color.BLUE : Module.Color.GREEN), width: 1 });
+            this.writer.strokeRenderer.configure({ brush: WILL.brush, color: ((client.uid == 1) ? Module.Color.BLUE : Module.Color.GREEN), width: 1 });
         } else {
-            this.writer.strokeRenderer.configure({ brush: WILL.brush, color: Module.Color.WHITE, width: 1 });
+            this.writer.strokeRenderer.configure({ brush: WILL.brush, color: Module.Color.WHITE, width:  5});
         }
-        console.log('mode changed to ' + this.Mode);
+        //console.log('mode changed to ' + this.Mode);
     },
     beginStroke: function (e) {
         
@@ -70,7 +70,7 @@
         this.pointerPos = getMousePos(this.canvasElement, e);
         if (WILL.frameID != WILL.canvas.frameID) {
             var self = this;
-
+            //console.log('Frame Id' + WILL.frameID);
             WILL.frameID = WILL.canvas.requestAnimationFrame(function () {
                 if (self.writer.inputPhase && self.writer.inputPhase == Module.InputPhase.Move) {
                     self.buildPath(self.pointerPos);
@@ -131,14 +131,6 @@
         if (!dirtyArea) dirtyArea = this.canvas.bounds;
         dirtyArea = Module.RectTools.ceil(dirtyArea);
 
-        if (this.Mode == 2) {
-            if (this.writer.inputPhase && this.writer.inputPhase == Module.InputPhase.Move) {
-                this.writer.strokeRenderer.drawPreliminary(this.preliminaryPathPart);
-
-                this.canvas.clear(dirtyArea, this.backgroundColor);
-                this.canvas.blend(this.strokesLayer, { rect: dirtyArea });
-            }
-        }
         this.canvas.clear(dirtyArea, this.backgroundColor);
         this.canvas.blend(this.strokesLayer, { rect: dirtyArea });
     },
@@ -153,25 +145,25 @@
         this.strokesLayer.clear(this.backgroundColor);
         this.canvas.clear(this.backgroundColor);
     }
-};
+}; 
 
 
-function Writer(id) {
+function Writer(id, uid) {
     this.id = id;
-
+    this.uid = uid;
     this.strokeRenderer = new Module.StrokeRenderer(WILL.canvas);
-    this.strokeRenderer.configure({ brush: WILL.brush, color: ((id == 1) ? Module.Color.BLUE : Module.Color.GREEN)  , width:1});
+    this.strokeRenderer.configure({ brush: WILL.brush, color: ((this.uid == 1) ? Module.Color.BLUE : Module.Color.GREEN), width: 1 });
     //this.strokeRenderer.configure({ brush: WILL.brush, color: (Module.Color.BLUE) });
 
-    this.intersector = new Module.Intersector();
+    //this.intersector = new Module.Intersector();
 }
 
 Writer.prototype.refresh = function () {
     if (this.id == client.id && this.inputPhase == Module.InputPhase.Move)
         this.strokeRenderer.drawPreliminary(WILL.preliminaryPathPart);
 
-    WILL.canvas.clear(this.strokeRenderer.updatedArea, WILL.backgroundColor);
-    WILL.canvas.blend(WILL.strokesLayer, { rect: this.strokeRenderer.updatedArea });
+    //WILL.canvas.clear(this.strokeRenderer.updatedArea, WILL.backgroundColor);
+    //WILL.canvas.blend(WILL.strokesLayer, { rect: this.strokeRenderer.updatedArea });
 
     this.strokeRenderer.blendUpdatedArea();
 }
@@ -215,8 +207,9 @@ var client = {
     init: function (server) {
         //this.id = parent.server.getSessionID(this.name);
         //console.log("this name " + env.width + " " + env.height);
-        this.id = $('#UserId').val();
-        console.log("client id = " + this.id);
+        this.uid = $('#UserId').val();
+        this.id = $('#conn-id').val();
+        console.log("client id = " + this.id + ' ' + this.uid);
         this.server = server;
         this.encoder = new Module.PathOperationEncoder();
         this.decoder = new Module.PathOperationDecoder(Module.PathOperationDecoder.getPathOperationDecoderCallbacksHandler(this.callbacksHandlerImplementation));
@@ -292,28 +285,7 @@ var client = {
 
         onUpdateBlendMode: function (writer, group, blendMode) { },
 
-        onSplit: function (writer, splits) {
-            var strokesToRemove = new Array();
-
-            splits.forEach(function (split) {
-                var stroke = WILL.strokes[split.id];
-                var replaceWith = new Array();
-
-                split.intervals.forEach(function (interval) {
-                    var subStroke = stroke.subStroke(interval.fromIndex, interval.toIndex, interval.fromTValue, interval.toTValue);
-                    replaceWith.push(subStroke);
-                }, this);
-
-                strokesToRemove.push({ stroke: stroke, replaceWith: replaceWith });
-            }, this);
-
-            strokesToRemove.forEach(function (strokeToRemove) {
-                WILL.strokes.replace(strokeToRemove.stroke, strokeToRemove.replaceWith);
-            }, this);
-
-            if (strokesToRemove.length > 0)
-                WILL.redraw(splits.affectedArea);
-        },
+        onSplit: function (writer, splits) {},
 
         onTransform: function (writer, group, mat) { }
     },
